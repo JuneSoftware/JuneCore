@@ -16,6 +16,7 @@ using System.Collections.Generic;
 
 namespace June.Core {
 
+	#region BASE MODEL
 	#if ENABLE_GENERIC_BASE_MODEL
 	public partial class BaseModel : IBaseModelExt<IRecord, IRecordArray> {
 	#else
@@ -333,5 +334,65 @@ namespace June.Core {
 			return _Record;
 		}
 	}
+	#endregion	
 
+	#region BASE LIST
+	public partial class BaseList<T> : IBaseList<IRecordArray, IRecord, T> where T : BaseModel {
+		
+		#region implemented abstract members of IBaseList
+
+		/// <summary>
+		/// Insert the specified index and record.
+		/// </summary>
+		/// <param name="index">Index.</param>
+		/// <param name="record">Record.</param>
+		protected override void _Insert(int index, IRecord record) {
+			_RawRecords.Insert(index, record);
+		}
+
+		/// <summary>
+		/// Removes at index.
+		/// </summary>
+		/// <param name="index">Index.</param>
+		protected override void _RemoveAt(int index) {
+			_RawRecords.RemoveAt(index);
+		}
+
+		/// <summary>
+		/// Add the specified record.
+		/// </summary>
+		/// <param name="record">Record.</param>
+		protected override void _Add(IRecord record) {
+			_RawRecords.Add(record);
+		}
+
+		/// <summary>
+		/// Remove the specified record.
+		/// </summary>
+		/// <param name="record">Record.</param>
+		protected override void _Remove(IRecord record) {
+			_RawRecords.Remove(record);
+		}
+
+		/// <summary>
+		/// Clear this instance.
+		/// </summary>
+		protected override void _Clear() {
+			_RawRecords.Clear();
+		}
+
+		#endregion
+
+		
+		#region Ctors
+		/// <summary>
+		/// Initializes a new instance of the <see cref="June.Core.BaseList`1"/> class.
+		/// </summary>
+		/// <param name="records">Records.</param>
+		public BaseList(IRecordArray records, Func<IRecord, T> ctor) : base(records, ctor) { }
+
+		#endregion
+
+	}
+	#endregion
 }

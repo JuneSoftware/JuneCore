@@ -5,15 +5,27 @@ using System.Collections.Generic;
 
 namespace June.Core {
 
-	public abstract partial class IBaseModel<TRecord> where TRecord : class {
+	/// <summary>
+	/// IBaseModel.
+	/// </summary>
+	public abstract partial class IBaseModel<TRecord> 
+		where TRecord : class {
 
 		protected TRecord _Record;
 
+		/// <summary>
+		/// Gets or sets the <see cref="June.Core.IBaseModel`1"/> with the specified key.
+		/// </summary>
+		/// <param name="key">Key.</param>
 		public abstract object this[string key] {
 			get;
 			set;
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="June.Core.IBaseModel`1"/> class.
+		/// </summary>
+		/// <param name="doc">Document.</param>
 		public IBaseModel(TRecord doc) {
 			UpdateDoc(doc);
 		}
@@ -139,7 +151,9 @@ namespace June.Core {
 	/// <summary>
 	/// IBaseModel extended.
 	/// </summary>
-	public abstract partial class IBaseModelExt<TRecord, TRecordArray> : IBaseModel<TRecord> where TRecord : class where TRecordArray : IEnumerable {
+	public abstract partial class IBaseModelExt<TRecord, TRecordArray> : IBaseModel<TRecord> 
+		where TRecord : class 
+		where TRecordArray : class, IEnumerable {
 	
 		/// <summary>
 		/// Initializes a new instance of the <see cref="June.Core.IBaseModelExt`2"/> class.
@@ -148,27 +162,22 @@ namespace June.Core {
 		public IBaseModelExt(TRecord doc) : base(doc) { }
 
 		/// <summary>
-		/// Gets the model list from records array.
+		/// Gets the model list from array.
 		/// </summary>
 		/// <returns>The model list from array.</returns>
 		/// <param name="key">Key.</param>
-		/// <param name="converter">Record to Model Converter.</param>
-		/// <typeparam name="TResult">Result type parameter.</typeparam>
-		/// <typeparam name="TRecord">Record type parameter.</typeparam>
-		/// <typeparam name="TRecordArray">Record Array type parameter.</typeparam>
+		/// <param name="converter">Converter.</param>
+		/// <typeparam name="TResult">The 1st type parameter.</typeparam>
+		/// <typeparam name="TTRecord">The 2nd type parameter.</typeparam>
+		/// <typeparam name="TTRecordArray">The 3rd type parameter.</typeparam>
 		protected virtual
-		List<TResult> GetModelListFromArray<TResult, TObj, TObjArray>(string key, Func<TObj, TResult> converter) where TObj : class where TObjArray : IEnumerable {
-			List<TResult> values = null;
-			var array = Get<TObjArray>(key);
-			if(null != array && null != converter) {
-				values = new List<TResult>();
-				foreach(var item in array) {
-					if(null != item && item is TObj) {
-						values.Add(converter(item as TObj));
-					}
-				}
-			}
-			return values;
+		List<TResult> GetModelListFromArray<TResult, TTRecord, TTRecordArray>(string key, Func<TTRecord, TResult> converter)
+			where TTRecord : class 
+			where TTRecordArray : class, IEnumerable
+			where TResult : IBaseModel<TTRecord> {
+
+			return IBaseList<TTRecordArray, TTRecord, TResult>
+				.GetModelListFromArray(Get<TTRecordArray>(key), converter);
 		}
 
 		/// <summary>
@@ -180,19 +189,311 @@ namespace June.Core {
 		/// <typeparam name="TResult">Result type parameter.</typeparam>
 		/// <typeparam name="TRecord">Record type parameter.</typeparam>
 		protected virtual
-		List<TResult> GetModelListFromArray<TResult, TObj>(string key, Func<TObj, TResult> converter) where TObj : class {
-			return GetModelListFromArray<TResult, TObj, TRecordArray>(key, converter);
+		List<TResult> GetModelListFromArray<TResult, TTRecord>(string key, Func<TTRecord, TResult> converter) 
+			where TTRecord : class 
+			where TResult : IBaseModel<TTRecord> {
+		
+			return GetModelListFromArray<TResult, TTRecord, TRecordArray>(key, converter);
 		}
 
 		/// <summary>
-		/// Gets the model list from json array.
+		/// Gets the model list from array.
 		/// </summary>
 		/// <returns>The model list from array.</returns>
 		/// <param name="key">Key.</param>
 		/// <param name="converter">Converter.</param>
-		/// <typeparam name="T">Result type parameter.</typeparam>
-		public virtual List<TResult> GetModelListFromArray<TResult>(string key, Func<TRecord, TResult> converter) {
-			return GetModelListFromArray<TResult, TRecord>(key, converter);
+		/// <typeparam name="TResult">The 1st type parameter.</typeparam>
+		protected virtual
+		List<TResult> GetModelListFromArray<TResult>(string key, Func<TRecord, TResult> converter) 
+			where TResult : IBaseModel<TRecord> {
+		
+			return GetModelListFromArray<TResult, TRecord>(key, converter);	
+		}
+	}
+
+	/// <summary>
+	/// Generic base list.
+	/// </summary>
+	public abstract partial class IBaseList<TRecordArray, TRecord, TModel> : IList<TModel>
+		where TModel : IBaseModel<TRecord>
+		where TRecord : class
+		where TRecordArray : class, IEnumerable {
+	
+		/// <summary>
+		/// The raw records.
+		/// </summary>
+		protected TRecordArray _RawRecords;
+
+		/// <summary>
+		/// The model records.
+		/// </summary>
+		protected List<TModel> _Records;
+
+		/// <summary>
+		/// The conveter `record to model`.
+		/// </summary>
+		Func<TRecord, TModel> _Conveter_RecordToModel;
+
+		/// <summary>
+		/// The conveter `model to record`.
+		/// </summary>
+		Func<TModel, TRecord> _Conveter_ModelToRecord;
+
+		#region IList implementation
+		/// <summary>
+		/// Indexs the of.
+		/// </summary>
+		/// <returns>The of.</returns>
+		/// <param name="item">Item.</param>
+		public int IndexOf (TModel item) {
+			return _Records.IndexOf(item);
+		}
+
+		/// <summary>
+		/// Insert the specified index and item.
+		/// </summary>
+		/// <param name="index">Index.</param>
+		/// <param name="item">Item.</param>
+		public void Insert (int index, TModel item) {
+			_Records.Insert(index, item);
+			if(null != _Conveter_ModelToRecord) {
+				_Insert(index, _Conveter_ModelToRecord(item));
+			}
+		}
+
+		/// <summary>
+		/// Removes at index.
+		/// </summary>
+		/// <param name="index">Index.</param>
+		public void RemoveAt (int index) {
+			_Records.RemoveAt(index);
+			if(null != _Conveter_ModelToRecord) {
+				_RemoveAt(index);
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets the <see cref="June.Core.BaseList`1"/> at the specified index.
+		/// </summary>
+		/// <param name="index">Index.</param>
+		public TModel this [int index] {
+			get {
+				return (TModel)_Records[index];
+			}
+			set {
+				_Records[index] = value;
+			}
+		}
+		#endregion
+
+		#region ICollection implementation
+		/// <summary>
+		/// Add the specified item.
+		/// </summary>
+		/// <param name="item">Item.</param>
+		public void Add (TModel item) {
+			_Records.Add(item);
+			if(null != _Conveter_ModelToRecord) {
+				_Add(_Conveter_ModelToRecord(item));
+			}
+		}
+
+		/// <summary>
+		/// Clear this instance.
+		/// </summary>
+		public void Clear () {
+			_Records.Clear();
+			_Clear();
+		}
+
+		/// <summary>
+		/// Contains the specified item.
+		/// </summary>
+		/// <param name="item">Item.</param>
+		public bool Contains (TModel item) {
+			return _Records.Contains(item);
+		}
+
+		/// <summary>
+		/// Copies to.
+		/// </summary>
+		/// <param name="array">Array.</param>
+		/// <param name="arrayIndex">Array index.</param>
+		public void CopyTo (TModel[] array, int arrayIndex) {
+			if(null == array)
+				throw new ArgumentNullException();
+
+			if(0 > arrayIndex)
+				throw new ArgumentOutOfRangeException();
+
+			if(arrayIndex + _Records.Count >= array.Length)
+				throw new ArgumentException("Index is greater than or equal to array length");
+			
+			for(int i=arrayIndex; i<_Records.Count + arrayIndex; i++) {
+				array[i] = _Records[i-arrayIndex];
+			}
+		}
+
+		/// <summary>
+		/// Remove the specified item.
+		/// </summary>
+		/// <param name="item">Item.</param>
+		public bool Remove (TModel item) {
+			if(null != _Conveter_ModelToRecord) {
+				_Remove(_Conveter_ModelToRecord(item));
+			}
+			return _Records.Remove(item);
+		}
+
+		/// <summary>
+		/// Gets the count.
+		/// </summary>
+		/// <value>The count.</value>
+		public int Count {
+			get {
+				return _Records.Count;
+			}
+		}
+
+		/// <summary>
+		/// Gets a value indicating whether this instance is read only.
+		/// </summary>
+		/// <value><c>true</c> if this instance is read only; otherwise, <c>false</c>.</value>
+		public bool IsReadOnly {
+			get {
+				return false;
+			}
+		}
+		#endregion
+
+		#region IEnumerable implementation
+		/// <summary>
+		/// Gets the enumerator.
+		/// </summary>
+		/// <returns>The enumerator.</returns>
+		public IEnumerator<TModel> GetEnumerator () {
+			foreach(var item in _Records) {
+				yield return (TModel)item;
+			}
+		}
+
+		/// <summary>
+		/// Gets the raw enumerator.
+		/// </summary>
+		/// <returns>The raw enumerator.</returns>
+		public IEnumerator<TRecord> GetRawEnumerator() {
+			foreach(var item in _RawRecords) {
+				if(item is TRecord) {
+					yield return item as TRecord;
+				}
+			}
+		}
+		#endregion
+
+		#region IEnumerable implementation
+		/// <summary>
+		/// Gets the enumerator.
+		/// </summary>
+		/// <returns>The enumerator.</returns>
+		IEnumerator IEnumerable.GetEnumerator () {
+			return this.GetEnumerator();
+		}
+		#endregion
+
+		#region Abstract Memebers
+
+		/// <summary>
+		/// Insert raw record at the specified index.
+		/// </summary>
+		/// <param name="index">Index.</param>
+		/// <param name="record">Record.</param>
+		protected abstract void _Insert(int index, TRecord record);
+
+		/// <summary>
+		/// Removes raw record at index.
+		/// </summary>
+		/// <param name="index">Index.</param>
+		protected abstract void _RemoveAt(int index);
+
+		/// <summary>
+		/// Add the specified raw record.
+		/// </summary>
+		/// <param name="record">Record.</param>
+		protected abstract void _Add(TRecord record);
+
+		/// <summary>
+		/// Remove the specified raw record.
+		/// </summary>
+		/// <param name="record">Record.</param>
+		protected abstract void _Remove(TRecord record);
+
+		/// <summary>
+		/// Clear this instances raw records.
+		/// </summary>
+		protected abstract void _Clear();
+
+		/// <summary>
+		/// Gets the raw record collection.
+		/// </summary>
+		/// <returns>The raw.</returns>
+		protected virtual TRecordArray GetRaw() {
+			return _RawRecords;
+		}
+
+		#endregion
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="June.Core.IBaseList`3"/> class.
+		/// </summary>
+		/// <param name="array">Array.</param>
+		/// <param name="recordToModel">Record to model.</param>
+		/// <param name="modelToRecord">Model to record.</param>
+		public IBaseList(TRecordArray array, Func<TRecord, TModel> recordToModel, Func<TModel, TRecord> modelToRecord) {
+			this._RawRecords = array;
+			this._Conveter_RecordToModel = recordToModel;
+			this._Conveter_ModelToRecord = modelToRecord;
+			ReLoadModels();
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="June.Core.IBaseList`3"/> class.
+		/// </summary>
+		/// <param name="array">Array.</param>
+		/// <param name="recordToModel">Record to model.</param>
+		public IBaseList(TRecordArray array, Func<TRecord, TModel> recordToModel) 
+			: this(array, recordToModel, (TModel model) => model.GetRaw()) { }
+
+		/// <summary>
+		/// Loads the models.
+		/// </summary>
+		protected void ReLoadModels() {
+			_Records = GetModelListFromArray<TModel, TRecord, TRecordArray>(this._RawRecords, this._Conveter_RecordToModel);
+		}
+
+		/// <summary>
+		/// Gets the model list from array.
+		/// </summary>
+		/// <returns>The model list from array.</returns>
+		/// <param name="array">Array.</param>
+		/// <param name="converter">Converter.</param>
+		/// <typeparam name="TModel">The 1st type parameter.</typeparam>
+		/// <typeparam name="TObj">The 2nd type parameter.</typeparam>
+		/// <typeparam name="TObjArray">The 3rd type parameter.</typeparam>
+		public static List<TResult> GetModelListFromArray<TResult, TObj, TObjArray>(TObjArray array, Func<TObj, TResult> converter) 
+			where TResult : IBaseModel<TObj>
+			where TObj : class
+			where TObjArray : class, IEnumerable {
+
+			List<TResult> values = null;
+			if(null != array && null != converter) {
+				values = new List<TResult>();
+				foreach(var item in array) {
+					if(null != item && item is TObj) {
+						values.Add(converter(item as TObj));
+					}
+				}
+			}
+			return values;
 		}
 	}
 }
