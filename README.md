@@ -8,21 +8,21 @@ Since we use **JSON** extensively (configs/api/database/etc) throughout our apps
 
 SimpleJson deserialises JSON into `IDictionary<string, object>` and `List<object>` objects in C#.
 
-
+![June.Core Class Diagram](https://raw.githubusercontent.com/JuneSoftware/JuneCore/master/images/June.Core.ClassDiagram.png)
 
 ```csharp
 IBaseModel<TRecord> 
 	where TRecord : class
 	
+		/\
 		||
-		\/
 	
 IBaseModelExt<TRecord, TRecordArray> : IBaseModel<TRecord>
 	where TRecord : class
 	where TRecordArray : class, IEnumerable
 
+		/\
 		||
-		\/
 
 BaseModel : IBaseModelExt<IDictionary<string, object>, List<object>>
 
@@ -35,8 +35,8 @@ IBaseList<TRecordArray, TRecord, TModel> : IList<TModel>
 	where TRecord : class
 	where TRecordArray : class, IEnumerable
 
+		/\
 		||
-		\/
 
 BaseList<T> : IBaseList<IRecordArray, IRecord, T> 
 	where T : BaseModel
