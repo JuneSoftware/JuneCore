@@ -171,7 +171,7 @@ namespace June.Core {
 		/// <typeparam name="TTRecord">The 2nd type parameter.</typeparam>
 		/// <typeparam name="TTRecordArray">The 3rd type parameter.</typeparam>
 		protected virtual
-		List<TResult> GetModelListFromArray<TResult, TTRecord, TTRecordArray>(string key, Func<TTRecord, TResult> converter)
+		List<TResult> GetModelListFromArray<TResult, TTRecord, TTRecordArray>(string key, Converter<TTRecord, TResult> converter)
 			where TTRecord : class 
 			where TTRecordArray : class, IEnumerable
 			where TResult : IBaseModel<TTRecord> {
@@ -189,7 +189,7 @@ namespace June.Core {
 		/// <typeparam name="TResult">Result type parameter.</typeparam>
 		/// <typeparam name="TRecord">Record type parameter.</typeparam>
 		protected virtual
-		List<TResult> GetModelListFromArray<TResult, TTRecord>(string key, Func<TTRecord, TResult> converter) 
+		List<TResult> GetModelListFromArray<TResult, TTRecord>(string key, Converter<TTRecord, TResult> converter) 
 			where TTRecord : class 
 			where TResult : IBaseModel<TTRecord> {
 		
@@ -204,7 +204,7 @@ namespace June.Core {
 		/// <param name="converter">Converter.</param>
 		/// <typeparam name="TResult">The 1st type parameter.</typeparam>
 		protected virtual
-		List<TResult> GetModelListFromArray<TResult>(string key, Func<TRecord, TResult> converter) 
+		List<TResult> GetModelListFromArray<TResult>(string key, Converter<TRecord, TResult> converter) 
 			where TResult : IBaseModel<TRecord> {
 		
 			return GetModelListFromArray<TResult, TRecord>(key, converter);	
@@ -232,12 +232,12 @@ namespace June.Core {
 		/// <summary>
 		/// The conveter `record to model`.
 		/// </summary>
-		Func<TRecord, TModel> _Conveter_RecordToModel;
+		Converter<TRecord, TModel> _Conveter_RecordToModel;
 
 		/// <summary>
 		/// The conveter `model to record`.
 		/// </summary>
-		Func<TModel, TRecord> _Conveter_ModelToRecord;
+		Converter<TModel, TRecord> _Conveter_ModelToRecord;
 
 		#region IList implementation
 		/// <summary>
@@ -448,7 +448,7 @@ namespace June.Core {
 		/// <param name="array">Array.</param>
 		/// <param name="recordToModel">Record to model.</param>
 		/// <param name="modelToRecord">Model to record.</param>
-		public IBaseList(TRecordArray array, Func<TRecord, TModel> recordToModel, Func<TModel, TRecord> modelToRecord) {
+		public IBaseList(TRecordArray array, Converter<TRecord, TModel> recordToModel, Converter<TModel, TRecord> modelToRecord) {
 			this._RawRecords = array;
 			this._Conveter_RecordToModel = recordToModel;
 			this._Conveter_ModelToRecord = modelToRecord;
@@ -460,7 +460,7 @@ namespace June.Core {
 		/// </summary>
 		/// <param name="array">Array.</param>
 		/// <param name="recordToModel">Record to model.</param>
-		public IBaseList(TRecordArray array, Func<TRecord, TModel> recordToModel) 
+		public IBaseList(TRecordArray array, Converter<TRecord, TModel> recordToModel) 
 			: this(array, recordToModel, (TModel model) => model.GetRaw()) { }
 
 		/// <summary>
@@ -469,6 +469,18 @@ namespace June.Core {
 		protected void ReLoadModels() {
 			_Records = GetModelListFromArray<TModel, TRecord, TRecordArray>(this._RawRecords, this._Conveter_RecordToModel);
 		}
+
+		#region List Helper Methods
+		/// <summary>
+		/// Converts all.
+		/// </summary>
+		/// <returns>The all.</returns>
+		/// <param name="converter">Converter.</param>
+		/// <typeparam name="T">The 1st type parameter.</typeparam>
+		public List<T> ConvertAll<T>(Converter<TModel, T> converter) {
+			return _Records.ConvertAll(converter);
+		}
+		#endregion
 
 		/// <summary>
 		/// Gets the model list from array.
@@ -479,7 +491,7 @@ namespace June.Core {
 		/// <typeparam name="TModel">The 1st type parameter.</typeparam>
 		/// <typeparam name="TObj">The 2nd type parameter.</typeparam>
 		/// <typeparam name="TObjArray">The 3rd type parameter.</typeparam>
-		public static List<TResult> GetModelListFromArray<TResult, TObj, TObjArray>(TObjArray array, Func<TObj, TResult> converter) 
+		public static List<TResult> GetModelListFromArray<TResult, TObj, TObjArray>(TObjArray array, Converter<TObj, TResult> converter) 
 			where TResult : IBaseModel<TObj>
 			where TObj : class
 			where TObjArray : class, IEnumerable {

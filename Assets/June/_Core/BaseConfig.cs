@@ -1,7 +1,11 @@
-﻿using System;
+﻿
+//#define USE_GENERIC_LIST_FOR_ITEMS
+
+using System;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+
 
 namespace June.Core {
 	
@@ -33,12 +37,16 @@ namespace June.Core {
 		}
 		#endregion
 
-		protected List<U> _Items = null;
+		#if USE_GENERIC_LIST_FOR_ITEMS
+		protected List<U> _Items = null
+		#else
+		protected BaseList<U> _Items = null;
+		#endif
 		/// <summary>
 		/// Gets or sets the items.
 		/// </summary>
 		/// <value>The items.</value>
-		public virtual List<U> Items {
+		public virtual BaseList<U> Items {
 			get {
 				if(null == _Items) {
 					lock(_padLock_) {
@@ -71,7 +79,7 @@ namespace June.Core {
 		/// Gets the deserialize func.
 		/// </summary>
 		/// <value>The deserialize func.</value>
-		public virtual Func<string, IDictionary<string, object>> DeserializeFunc {
+		public virtual Converter<string, IDictionary<string, object>> DeserializeFunc {
 			get {
 				return Util.DeSerializeJsonDocFromCacheOrResource;
 			}
@@ -82,7 +90,7 @@ namespace June.Core {
 		/// </summary>
 		/// <returns>The item converter.</returns>
 		/// <typeparam name="U">The 1st type parameter.</typeparam>
-		public abstract Func<IDictionary<string, object>, U> ItemConverter {
+		public abstract Converter<IDictionary<string, object>, U> ItemConverter {
 			get;
 		}
 
@@ -129,12 +137,7 @@ namespace June.Core {
 		protected virtual void LoadItems() {
 			var rawItems = null != RootKey && null != _Record ? Get<SimpleJson.JsonArray>(RootKey) : null;
 			if(null != rawItems) {
-				_Items = new List<U>();
-				foreach(var ri in rawItems) {
-					if(ri is IDictionary<string, object>) {
-						_Items.Add(ItemConverter((IDictionary<string, object>)ri));
-					}
-				}
+				_Items = new BaseList<U>(rawItems, ItemConverter);
 			}
 		}
 

@@ -389,7 +389,7 @@ namespace June.Core {
 		/// Initializes a new instance of the <see cref="June.Core.BaseList`1"/> class.
 		/// </summary>
 		/// <param name="records">Records.</param>
-		public BaseList(IRecordArray records, Func<IRecord, T> ctor) : base(records, ctor) { }
+		public BaseList(IRecordArray records, Converter<IRecord, T> ctor) : base(records, ctor) { }
 
 		#endregion
 

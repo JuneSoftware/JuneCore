@@ -16,7 +16,7 @@ namespace June {
 	/// <summary>
 	/// Util.
 	/// </summary>
-	public static class Util {
+	public static partial class Util {
 
 		/// <summary>
 		/// JSON encoder/decoder

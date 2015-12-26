@@ -35,7 +35,7 @@ public class TestConfigManager : BaseConfig<TestConfigManager, TestConfig> {
 	/// <returns>The item converter.</returns>
 	/// <typeparam name="U">The 1st type parameter.</typeparam>
 	/// <value>The item converter.</value>
-	public override System.Func<System.Collections.Generic.IDictionary<string, object>, TestConfig> ItemConverter {
+	public override System.Converter<System.Collections.Generic.IDictionary<string, object>, TestConfig> ItemConverter {
 		get {
 			return doc => new TestConfig(doc);
 		}
