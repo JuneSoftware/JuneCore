@@ -248,7 +248,7 @@ namespace June.Core {
 		#if ENABLE_GENERIC_BASE_MODEL
 		override 
 		#endif
-		T GetModel<T>(string key, Func<IRecord, T> converter) {
+		T GetModel<T>(string key, Converter<IRecord, T> converter) {
 			return converter(Get<IRecord>(key));
 		}
 

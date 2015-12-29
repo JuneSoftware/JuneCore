@@ -6,9 +6,45 @@ using System.Collections.Generic;
 namespace June.Core {
 
 	/// <summary>
-	/// IBaseModel.
+	/// IBaseModel interface
 	/// </summary>
-	public abstract partial class IBaseModel<TRecord> 
+	public partial interface IBaseModel<TRecord, TKey> where TRecord : class {
+
+		void UpdateDoc(TRecord updateDoc);
+
+		int GetInt(TKey key);
+
+		long GetLong(TKey key);
+
+		float GetFloat(TKey key);
+
+		double GetDouble(TKey key);
+
+		bool GetBool(TKey key);
+
+		string GetString(TKey key);
+
+		string GetAsString(TKey key);
+
+		List<string> GetStringList(TKey key);
+
+		T Get<T>(TKey key);
+
+		T GetEnum<T>(TKey key);
+
+		T GetModel<T>(TKey key, Converter<TRecord, T> converter);
+
+		void Set(TKey key, object value);
+
+		TRecord GetRaw();
+	}
+
+	/// <summary>
+	/// IBaseModel where the key type is string.
+	/// Since we mostly use JSON as our data exchange format, they key will always be of type string.
+	/// 
+	/// </summary>
+	public abstract partial class IBaseModel<TRecord> : IBaseModel<TRecord, string>
 		where TRecord : class {
 
 		protected TRecord _Record;
@@ -118,7 +154,7 @@ namespace June.Core {
 		/// <param name="key">Key.</param>
 		/// <param name="converter">Converter.</param>
 		/// <typeparam name="T">The 1st type parameter.</typeparam>
-		public virtual T GetModel<T>(string key, Func<TRecord, T> converter) {
+		public virtual T GetModel<T>(string key, Converter<TRecord, T> converter) {
 			return converter(Get<TRecord>(key));
 		}
 
